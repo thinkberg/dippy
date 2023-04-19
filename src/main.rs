@@ -179,26 +179,47 @@ where
     Ok(())
 }
 
+macro_rules! handle_pin_error {
+    ($name:expr, $pin_driver:expr) => {
+        match $pin_driver {
+            Ok(pd) => pd,
+            Err(err) => {
+                println!("pin {} init fails: {}", $name, err);
+                panic!();
+            }
+        }
+    };
+}
+
 fn main() -> Result<(), core::convert::Infallible> {
     esp_idf_sys::link_patches();
 
-    let peripherals = Peripherals::take().unwrap();
+    println!("hallo welt");
+
+    let peripherals = match Peripherals::take() {
+        Some(p) => p,
+        None => {
+            println!("peripherals is none");
+            panic!();
+        }
+    };
     let pins = (
-        /*R1*/ PinDriver::output(peripherals.pins.gpio25).unwrap(),
-        /*G1*/ PinDriver::output(peripherals.pins.gpio26).unwrap(),
-        /*B1*/ PinDriver::output(peripherals.pins.gpio27).unwrap(),
-        /*R2*/ PinDriver::output(peripherals.pins.gpio14).unwrap(),
-        /*G2*/ PinDriver::output(peripherals.pins.gpio12).unwrap(),
-        /*B2*/ PinDriver::output(peripherals.pins.gpio13).unwrap(),
-        /*A*/ PinDriver::output(peripherals.pins.gpio23).unwrap(),
-        /*B*/ PinDriver::output(peripherals.pins.gpio19).unwrap(),
-        /*C*/ PinDriver::output(peripherals.pins.gpio5).unwrap(),
-        /*D*/ PinDriver::output(peripherals.pins.gpio17).unwrap(),
-        /*F*/ PinDriver::output(peripherals.pins.gpio18).unwrap(),
-        /*CLK*/ PinDriver::output(peripherals.pins.gpio16).unwrap(),
-        /*LAT*/ PinDriver::output(peripherals.pins.gpio4).unwrap(),
-        /*OE*/ PinDriver::output(peripherals.pins.gpio15).unwrap(),
+        handle_pin_error!("R1", PinDriver::output(peripherals.pins.gpio25)),
+        handle_pin_error!("G1", PinDriver::output(peripherals.pins.gpio26)),
+        handle_pin_error!("B1", PinDriver::output(peripherals.pins.gpio27)),
+        handle_pin_error!("R2", PinDriver::output(peripherals.pins.gpio14)),
+        handle_pin_error!("G2", PinDriver::output(peripherals.pins.gpio12)),
+        handle_pin_error!("B2", PinDriver::output(peripherals.pins.gpio13)),
+        handle_pin_error!("A", PinDriver::output(peripherals.pins.gpio23)),
+        handle_pin_error!("B", PinDriver::output(peripherals.pins.gpio19)),
+        handle_pin_error!("C", PinDriver::output(peripherals.pins.gpio5)),
+        handle_pin_error!("D", PinDriver::output(peripherals.pins.gpio17)),
+        handle_pin_error!("F", PinDriver::output(peripherals.pins.gpio18)),
+        handle_pin_error!("CLK", PinDriver::output(peripherals.pins.gpio16)),
+        handle_pin_error!("LAT", PinDriver::output(peripherals.pins.gpio4)),
+        handle_pin_error!("OE", PinDriver::output(peripherals.pins.gpio15)),
     );
+
     let mut display = Hub75::new(pins, 8);
 
     let clock_face = create_face(&display);
@@ -223,6 +244,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         display.clear();
 
         draw_face(&mut display, &clock_face)?;
+        /*
         draw_hand(&mut display, &clock_face, hours_radians, -60)?;
         draw_hand(&mut display, &clock_face, minutes_radians, -30)?;
         draw_hand(&mut display, &clock_face, seconds_radians, 0)?;
@@ -236,8 +258,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         Circle::with_center(clock_face.center(), 9)
             .into_styled(PrimitiveStyle::with_fill(Rgb888::from(BinaryColor::On)))
             .draw(&mut display)?;
-
-        // println!("{}", digital_clock_text);
+        */
 
         thread::sleep(Duration::from_millis(50));
     }
