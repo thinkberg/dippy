@@ -17,8 +17,8 @@ use embedded_graphics::{
     primitives::{Circle, Line, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle},
     text::Text,
 };
-use std::{thread, time::Duration};
 use esp_idf_hal::gpio::PinDriver;
+use std::{thread, time::Duration};
 
 use esp_idf_hal::prelude::Peripherals;
 use hub75::Hub75;
@@ -36,9 +36,9 @@ fn polar(circle: &Circle, angle: f32, radius_delta: i32) -> Point {
 
     circle.center()
         + Point::new(
-        (angle.sin() * radius) as i32,
-        -(angle.cos() * radius) as i32,
-    )
+            (angle.sin() * radius) as i32,
+            -(angle.cos() * radius) as i32,
+        )
 }
 
 /// Converts an hour into an angle in radians.
@@ -66,12 +66,15 @@ fn create_face(target: &impl DrawTarget) -> Circle {
 
 /// Draws a circle and 12 graduations as a simple clock face.
 fn draw_face<D>(target: &mut D, clock_face: &Circle) -> Result<(), D::Error>
-    where
-        D: DrawTarget<Color = Rgb888>,
+where
+    D: DrawTarget<Color = Rgb888>,
 {
     // Draw the outer face.
     (*clock_face)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::from(BinaryColor::On), 2))
+        .into_styled(PrimitiveStyle::with_stroke(
+            Rgb888::from(BinaryColor::On),
+            2,
+        ))
         .draw(target)?;
 
     // Draw 12 graduations.
@@ -83,7 +86,10 @@ fn draw_face<D>(target: &mut D, clock_face: &Circle) -> Result<(), D::Error>
         let end = polar(clock_face, angle, -10);
 
         Line::new(start, end)
-            .into_styled(PrimitiveStyle::with_stroke(Rgb888::from(BinaryColor::On), 1))
+            .into_styled(PrimitiveStyle::with_stroke(
+                Rgb888::from(BinaryColor::On),
+                1,
+            ))
             .draw(target)?;
     }
 
@@ -97,13 +103,16 @@ fn draw_hand<D>(
     angle: f32,
     length_delta: i32,
 ) -> Result<(), D::Error>
-    where
-        D: DrawTarget<Color = Rgb888>,
+where
+    D: DrawTarget<Color = Rgb888>,
 {
     let end = polar(clock_face, angle, length_delta);
 
     Line::new(clock_face.center(), end)
-        .into_styled(PrimitiveStyle::with_stroke(Rgb888::from(BinaryColor::On), 1))
+        .into_styled(PrimitiveStyle::with_stroke(
+            Rgb888::from(BinaryColor::On),
+            1,
+        ))
         .draw(target)
 }
 
@@ -114,8 +123,8 @@ fn draw_second_decoration<D>(
     angle: f32,
     length_delta: i32,
 ) -> Result<(), D::Error>
-    where
-        D: DrawTarget<Color = Rgb888>,
+where
+    D: DrawTarget<Color = Rgb888>,
 {
     let decoration_position = polar(clock_face, angle, length_delta);
 
@@ -137,8 +146,8 @@ fn draw_digital_clock<D>(
     clock_face: &Circle,
     time_str: &str,
 ) -> Result<(), D::Error>
-    where
-        D: DrawTarget<Color = Rgb888>,
+where
+    D: DrawTarget<Color = Rgb888>,
 {
     // Create a styled text object for the time text.
     let mut text = Text::new(
@@ -161,8 +170,8 @@ fn draw_digital_clock<D>(
         text_dimensions.top_left - Point::new(3, 3),
         text_dimensions.size + Size::new(4, 4),
     )
-        .into_styled(PrimitiveStyle::with_fill(Rgb888::from(BinaryColor::On)))
-        .draw(target)?;
+    .into_styled(PrimitiveStyle::with_fill(Rgb888::from(BinaryColor::On)))
+    .draw(target)?;
 
     // Draw the text after the background is drawn.
     text.draw(target)?;
@@ -227,7 +236,6 @@ fn main() -> Result<(), core::convert::Infallible> {
         Circle::with_center(clock_face.center(), 9)
             .into_styled(PrimitiveStyle::with_fill(Rgb888::from(BinaryColor::On)))
             .draw(&mut display)?;
-
 
         // println!("{}", digital_clock_text);
 
