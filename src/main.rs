@@ -19,6 +19,7 @@ use embedded_graphics::{
 };
 use esp_idf_hal::gpio::PinDriver;
 use std::{thread, time::Duration};
+use esp_idf_hal::delay;
 
 use esp_idf_hal::prelude::Peripherals;
 use hub75::Hub75;
@@ -220,7 +221,7 @@ fn main() -> Result<(), core::convert::Infallible> {
         handle_pin_error!("OE", PinDriver::output(peripherals.pins.gpio15)),
     );
 
-    let mut display = Hub75::new(pins, 8);
+    let mut display = Hub75::new(pins, 3);
 
     let clock_face = create_face(&display);
 
@@ -243,8 +244,13 @@ fn main() -> Result<(), core::convert::Infallible> {
 
         display.clear();
 
-        draw_face(&mut display, &clock_face)?;
+        display.set_pixel(31,31, (0,255,0));
+
+        let mut delay = delay::FreeRtos {};
+        display.output(delay);
         /*
+        draw_face(&mut display, &clock_face)?;
+
         draw_hand(&mut display, &clock_face, hours_radians, -60)?;
         draw_hand(&mut display, &clock_face, minutes_radians, -30)?;
         draw_hand(&mut display, &clock_face, seconds_radians, 0)?;
