@@ -19,13 +19,13 @@ use embedded_graphics::{
 };
 use esp_idf_hal::gpio::PinDriver;
 use std::{thread, time::Duration};
-use esp_idf_hal::delay;
+use esp_idf_hal::delay::{Ets, FreeRtos};
 
 use esp_idf_hal::prelude::Peripherals;
 use hub75::Hub75;
 
 /// The margin between the clock face and the display border.
-const MARGIN: u32 = 10;
+const MARGIN: u32 = 1;
 
 /// Converts a polar coordinate (angle/distance) into an (X, Y) coordinate centered around the
 /// center of the circle.
@@ -37,9 +37,9 @@ fn polar(circle: &Circle, angle: f32, radius_delta: i32) -> Point {
 
     circle.center()
         + Point::new(
-            (angle.sin() * radius) as i32,
-            -(angle.cos() * radius) as i32,
-        )
+        (angle.sin() * radius) as i32,
+        -(angle.cos() * radius) as i32,
+    )
 }
 
 /// Converts an hour into an angle in radians.
@@ -58,7 +58,7 @@ fn sexagesimal_to_angle(value: u32) -> f32 {
 /// Creates a centered circle for the clock face.
 fn create_face(target: &impl DrawTarget) -> Circle {
     // The draw target bounding box can be used to determine the size of the display.
-    let bounding_box = target.bounding_box();
+    let bounding_box = Rectangle::new(Point::new(0, 0), Size::new(63, 63));
 
     let diameter = bounding_box.size.width.min(bounding_box.size.height) - 2 * MARGIN;
 
@@ -67,8 +67,8 @@ fn create_face(target: &impl DrawTarget) -> Circle {
 
 /// Draws a circle and 12 graduations as a simple clock face.
 fn draw_face<D>(target: &mut D, clock_face: &Circle) -> Result<(), D::Error>
-where
-    D: DrawTarget<Color = Rgb888>,
+    where
+        D: DrawTarget<Color=Rgb888>,
 {
     // Draw the outer face.
     (*clock_face)
@@ -104,14 +104,14 @@ fn draw_hand<D>(
     angle: f32,
     length_delta: i32,
 ) -> Result<(), D::Error>
-where
-    D: DrawTarget<Color = Rgb888>,
+    where
+        D: DrawTarget<Color=Rgb888>,
 {
     let end = polar(clock_face, angle, length_delta);
 
     Line::new(clock_face.center(), end)
         .into_styled(PrimitiveStyle::with_stroke(
-            Rgb888::from(BinaryColor::On),
+            Rgb888::from(Random),
             1,
         ))
         .draw(target)
@@ -124,8 +124,8 @@ fn draw_second_decoration<D>(
     angle: f32,
     length_delta: i32,
 ) -> Result<(), D::Error>
-where
-    D: DrawTarget<Color = Rgb888>,
+    where
+        D: DrawTarget<Color=Rgb888>,
 {
     let decoration_position = polar(clock_face, angle, length_delta);
 
@@ -147,8 +147,8 @@ fn draw_digital_clock<D>(
     clock_face: &Circle,
     time_str: &str,
 ) -> Result<(), D::Error>
-where
-    D: DrawTarget<Color = Rgb888>,
+    where
+        D: DrawTarget<Color=Rgb888>,
 {
     // Create a styled text object for the time text.
     let mut text = Text::new(
@@ -171,8 +171,8 @@ where
         text_dimensions.top_left - Point::new(3, 3),
         text_dimensions.size + Size::new(4, 4),
     )
-    .into_styled(PrimitiveStyle::with_fill(Rgb888::from(BinaryColor::On)))
-    .draw(target)?;
+        .into_styled(PrimitiveStyle::with_fill(Rgb888::from(BinaryColor::On)))
+        .draw(target)?;
 
     // Draw the text after the background is drawn.
     text.draw(target)?;
@@ -192,10 +192,9 @@ macro_rules! handle_pin_error {
     };
 }
 
+
 fn main() -> Result<(), core::convert::Infallible> {
     esp_idf_sys::link_patches();
-
-    println!("hallo welt");
 
     let peripherals = match Peripherals::take() {
         Some(p) => p,
@@ -224,6 +223,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut display = Hub75::new(pins, 3);
 
     let clock_face = create_face(&display);
+    let mut delay = FreeRtos;
 
     'running: loop {
         let time = Local::now();
@@ -233,39 +233,29 @@ fn main() -> Result<(), core::convert::Infallible> {
         let minutes_radians = sexagesimal_to_angle(time.minute());
         let seconds_radians = sexagesimal_to_angle(time.second());
 
-        // NOTE: In no-std environments, consider using
-        // [arrayvec](https://stackoverflow.com/a/39491059/383609) and a fixed size buffer
-        let digital_clock_text = format!(
-            "{:02}:{:02}:{:02}",
-            time.hour(),
-            time.minute(),
-            time.second()
-        );
-
         display.clear();
 
-        display.set_pixel(31,31, (0,255,0));
 
-        let mut delay = delay::FreeRtos {};
-        display.output(delay);
-        /*
         draw_face(&mut display, &clock_face)?;
-
         draw_hand(&mut display, &clock_face, hours_radians, -60)?;
         draw_hand(&mut display, &clock_face, minutes_radians, -30)?;
         draw_hand(&mut display, &clock_face, seconds_radians, 0)?;
         draw_second_decoration(&mut display, &clock_face, seconds_radians, -20)?;
-
-        // Draw digital clock just above center.
-        draw_digital_clock(&mut display, &clock_face, &digital_clock_text)?;
 
         // Draw a small circle over the hands in the center of the clock face.
         // This has to happen after the hands are drawn so they're covered up.
         Circle::with_center(clock_face.center(), 9)
             .into_styled(PrimitiveStyle::with_fill(Rgb888::from(BinaryColor::On)))
             .draw(&mut display)?;
-        */
 
-        thread::sleep(Duration::from_millis(50));
+        match display.output(&mut delay) {
+            Ok(r) => r,
+            Err(err) => {
+                println!("{err}");
+                panic!();
+            }
+        };
+
+        // thread::sleep(Duration::from_millis(1000));
     }
 }
