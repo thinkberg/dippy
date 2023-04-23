@@ -13,15 +13,15 @@ debug = true # Symbols are nice and they don't increase the size on Flash
 opt-level = "z"
 
 [features]
-pio = ["esp-idf-sys/pio"]
+#pio = ["esp-idf-sys/pio"]
 
 [dependencies]
+rand = "0.8.5"
 esp-idf-hal = { version = "0.39.4"}
 esp-idf-sys = { version = "0.31.12", features = ["binstart"] }
 embedded-hal = "0.2.7"
 
 embedded-graphics = "0.7.1"
-#embedded-graphics-simulator = "0.4.1"
 hub75 = { git = "https://github.com/jcsoo/hub75-rs", features = ["size-64x64"] }
 
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
